@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const pool = require('./db'); // adjust if your pool is in another file
+const pool = require('./server/db'); // adjust if your pool is in another file
 
 const express = require('express');
 const cors = require('cors');
