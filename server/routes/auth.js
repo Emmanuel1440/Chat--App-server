@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const pool = require('../server/db'); // ✅ Correct path to db.js
+const pool = require('../server/db');  // ✅ Correct path to db.js
 
 //const pool = require('../db');
 
