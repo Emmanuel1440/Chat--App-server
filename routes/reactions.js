@@ -1,58 +1,73 @@
-// server/routes/reactions.js
 const express = require('express');
 const router = express.Router();
-const jwt = require('jsonwebtoken');
 const pool = require('../db');
+const authMiddleware = require('../middleware/authMiddleware');
 
 module.exports = (wss) => {
-  // Add a new reaction and broadcast
-  router.post('/', async (req, res) => {
-    try {
-      const { token, message_id, emoji } = req.body;
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      const user_id = decoded.id;
+  // Post/Toggle a user reaction on a message
+  router.post('/', authMiddleware, async (req, res) => {
+    const { message_id, emoji } = req.body;
+    const userId = req.user.id;
 
-      const result = await pool.query(
-        `INSERT INTO reactions (message_id, user_id, emoji)
-         VALUES ($1, $2, $3) RETURNING *`,
-        [message_id, user_id, emoji]
+    if (!message_id || !emoji) {
+      return res.status(400).json({ error: 'Missing parameters' });
+    }
+
+    try {
+      // Check if user has already reacted with this emoji
+      const existing = await pool.query(
+        'SELECT * FROM reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3',
+        [message_id, userId, emoji]
       );
 
-      const reaction = result.rows[0];
+      if (existing.rows.length > 0) {
+        // Toggle action: If clicked again, delete the reaction
+        await pool.query(
+          'DELETE FROM reactions WHERE message_id = $1 AND user_id = $2 AND emoji = $3',
+          [message_id, userId, emoji]
+        );
+        
+        const removePayload = { type: 'reaction_remove', message_id, emoji, user_id: userId };
+        wss.clients.forEach(client => {
+          if (client.readyState === 1) client.send(JSON.stringify(removePayload));
+        });
+        return res.json({ success: true, action: 'removed', reaction: { message_id, emoji, user_id: userId } });
+      }
 
-      const payload = {
-        type: 'reaction',
+      await pool.query(
+        'INSERT INTO reactions (message_id, user_id, emoji) VALUES ($1, $2, $3)',
+        [message_id, userId, emoji]
+      );
+
+      const addPayload = {
+        type: 'reaction_add',
         message_id,
         emoji,
-        user_id,
-        created_at: new Date().toISOString(),
+        user_id: userId
       };
 
-      // ✅ Broadcast reaction to all WebSocket clients
-      wss.clients.forEach((client) => {
-        if (client.readyState === 1) {
-          client.send(JSON.stringify(payload));
-        }
+      wss.clients.forEach(client => {
+        if (client.readyState === 1) client.send(JSON.stringify(addPayload));
       });
 
-      res.json(payload);
+      res.json({ success: true, action: 'added', reaction: addPayload });
     } catch (err) {
-      console.error('Reaction error:', err.message);
-      res.status(500).json({ error: 'Failed to add reaction' });
+      console.error(err);
+      res.status(500).json({ error: 'Database transaction error mapping reactions' });
     }
   });
 
-  // Get reactions for a specific message
+  // Get aggregated reaction lists for a message
   router.get('/:messageId', async (req, res) => {
     try {
       const result = await pool.query(
-        `SELECT user_id, emoji FROM reactions WHERE message_id = $1`,
+        'SELECT user_id, emoji FROM reactions WHERE message_id = $1',
         [req.params.messageId]
       );
       res.json(result.rows);
     } catch (err) {
-      console.error('Fetch reaction error:', err.message);
-      res.status(500).json({ error: 'Could not fetch reactions' });
+      console.error(err);
+      res.status(500).json({ error: 'Could not resolve database reactions' });
     }
   });
 

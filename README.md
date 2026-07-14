@@ -1,29 +1,24 @@
       📬   Real-Time Chat App
+# 📬 Chat App - Backend (Server-Side)
 
-This is a full-stack real-time chat application built with Node.js, Express, PostgreSQL, WebSockets, and a React + Bootstrap frontend. It features live messaging, emoji reactions, media uploads, and JWT-based authentication.
+The backend engine powering the real-time chat application. It manages the REST API endpoints, user sessions, database interactions, and active WebSocket connections.
 
-🚀 Features
-🧑‍💬 User Authentication (JWT)
+## 🛠️ Tech Stack
+* **Runtime**: Node.js & Express
+* **Database**: PostgreSQL (persisting messages, users, and emoji reactions)
+* **Real-time**: WebSocket (`ws` package)
+* **Authentication**: JWT (JSON Web Tokens)
+* **File Handling**: Multer (for local media storage and static serving)
 
-💬 Real-time chat using WebSocket
+---
 
-🖼️ Media message support (image uploads)
+## 🚀 Installation & Setup
 
-😀 Emoji reactions to messages
+### 1. Database Setup
+Ensure you have a running **PostgreSQL** instance. Create a new database:
+```sql
+CREATE DATABASE chat_db;
 
-✏️ Edit/Delete messages
-
-⏰ Relative timestamps
-
-📱 Responsive design with Bootstrap
-
-
-🛠️ Tech Stack
-  Frontend: React, Bootstrap, Emoji Picker
-
-  Backend: Node.js, Express, WebSocket
-
-  Database: PostgreSQL
 
 Auth: JWT (JSON Web Token)
 
