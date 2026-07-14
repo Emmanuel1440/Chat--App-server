@@ -1,4 +1,15 @@
-"node_modules/" 
-"uploads/" 
-"uploads/*" 
-"!uploads/avatars/**" 
+# Dependencies
+node_modules/
+
+# Environment variables
+.env
+.env.*
+
+# Uploads
+uploads/
+uploads/*
+!uploads/avatars/**
+
+# Logs
+*.log
+npm-debug.log*
